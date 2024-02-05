@@ -15,7 +15,7 @@ from src.utils import save_object
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifacts',"proprocessor.pkl")
+    preprocessor_obj_file_path=os.path.join('artifacts',"preprocessor.pkl")
 
 class DataTransformation:
     def __init__(self):
@@ -27,36 +27,12 @@ class DataTransformation:
         
         '''
         try:
-
-            numerical_columns = ["LIMIT_BAL", "AGE", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"]
-            categorical_columns = ["SEX", "EDUCATION", "MARRIAGE", "PAY_1", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6",]
-
-            num_pipeline= Pipeline(
+            preprocessor= Pipeline(
                 steps=[
                 ("scaler",StandardScaler())
                 ]
             )
-
-            cat_pipeline=Pipeline(
-
-                steps=[
-                ("one_hot_encoder",OneHotEncoder()),
-                ("scaler",StandardScaler(with_mean=False))
-                ]
-
-            )
-
-            logging.info(f"Categorical columns: {categorical_columns}")
-            logging.info(f"Numerical columns: {numerical_columns}")
-
-            preprocessor=ColumnTransformer(
-                [
-                ("num_pipeline",num_pipeline,numerical_columns),
-                ("cat_pipelines",cat_pipeline,categorical_columns)
-
-                ]
-
-            )
+            logging.info("Preprocessing done")
 
             return preprocessor
         
@@ -93,16 +69,10 @@ class DataTransformation:
             input_feature_train_arr=preprocessing_obj.fit_transform(input_feature_train_df)
             input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
 
-            print("Shape of input_feature_train_arr: ", input_feature_train_arr.shape)
-            print("Shape of target_feature_train_df: ", target_feature_train_df.shape)
-            print("Data type of input_feature_train_arr: ", input_feature_train_arr.dtype)
-            print("Data type of target_feature_train_df: ", target_feature_train_df.dtype)
-            # input_feature_train_arr = input_feature_train_arr.reshape(-1, 1)
-            target_feature_train_df = target_feature_train_df.values.reshape(-1, 1)
-            train_arr = np.c_[input_feature_train_arr, target_feature_train_df]
-
-            target_feature_test_df = target_feature_test_df.values.reshape(-1,)
-            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df).reshape(-1, 1)]
+            train_arr = np.c_[
+                input_feature_train_arr, np.array(target_feature_train_df)
+            ]
+            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
 
             logging.info(f"Saved preprocessing object.")
 

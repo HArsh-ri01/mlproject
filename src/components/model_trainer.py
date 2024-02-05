@@ -2,15 +2,11 @@ import os
 import sys
 from dataclasses import dataclass
 
-from catboost import CatBoostClassifier
 from sklearn.ensemble import (
-    AdaBoostClassifier,
-    GradientBoostingClassifier,
     RandomForestClassifier,
 )
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import r2_score, f1_score, accuracy_score, roc_auc_score
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
@@ -39,49 +35,33 @@ class ModelTrainer:
                 test_array[:,-1]
             )
             models = {
-                "Random Forest": RandomForestClassifier(),
+                "LogisticRegression" : LogisticRegression(),
                 "Decision Tree": DecisionTreeClassifier(),
-                "Gradient Boosting": GradientBoostingClassifier(),
+                "Random Forest": RandomForestClassifier(),
                 "XGBClassifier": XGBClassifier(),
-                "CatBoosting Classifier": CatBoostClassifier(verbose=False),
-                "AdaBoost Classifier": AdaBoostClassifier(),
-                "MLPClassifier": MLPClassifier()
             }
             params={
+                "LogisticRegression": {
+                    'penalty': ['l2','l2'], 
+                    'C': [0.001, 0.01, 0.1, 1, 10 , 100, 1000, 10000], 
+                    'solver': ['liblinear', 'saga'],
+                    'max_iter': [100,150,200,300,400,500,600,700,800,900,1000]  
+                },
                 "Decision Tree": {
-                    'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
-                    # 'splitter':['best','random'],
-                    # 'max_features':['sqrt','log2'],
+                    'criterion':['gini', 'entropy'],
+                    'max_features':['sqrt'],
                 },
-                "Random Forest":{
-                    # 'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
-                 
-                    # 'max_features':['sqrt','log2',None],
-                    'n_estimators': [8,16,32,64,128,256]
+                "Random Forest": {
+                    'criterion': ['log_loss', 'entropy'], 
+                    'max_features': ['sqrt'], 
+                    'n_estimators': [100,150,300,600,1000], 
+                    'max_depth': [10,20,30,50,100]
                 },
-                "Gradient Boosting":{
-                    # 'loss':['squared_error', 'huber', 'absolute_error', 'quantile'],
-                    'learning_rate':[.1,.01,.05,.001],
-                    'subsample':[0.6,0.7,0.75,0.8,0.85,0.9],
-                    # 'criterion':['squared_error', 'friedman_mse'],
-                    # 'max_features':['auto','sqrt','log2'],
-                    'n_estimators': [8,16,32,64,128,256]
+                "XGBClassifier": {
+                    'learning_rate': [0.05, 0.1, 0.15],
+                    'n_estimators': [100, 150, 200],
+                    'booster': ['gbtree', 'gblinear', 'dart']
                 },
-                "XGBRegressor":{
-                    'learning_rate':[.1,.01,.05,.001],
-                    'n_estimators': [8,16,32,64,128,256]
-                },
-                "CatBoosting Regressor":{
-                    'depth': [6,8,10],
-                    'learning_rate': [0.01, 0.05, 0.1],
-                    'iterations': [30, 50, 100]
-                },
-                "AdaBoost Regressor":{
-                    'learning_rate':[.1,.01,0.5,.001],
-                    # 'loss':['linear','square','exponential'],
-                    'n_estimators': [8,16,32,64,128,256]
-                }
-                
             }
 
             model_report:dict=evaluate_models(X_train=X_train,y_train=y_train,X_test=X_test,y_test=y_test,
@@ -97,7 +77,7 @@ class ModelTrainer:
             ]
             best_model = models[best_model_name]
 
-            if best_model_score<0.6:
+            if best_model_score<0.7:
                 raise CustomException("No best model found")
             logging.info(f"Best found model on both training and testing dataset")
 
@@ -108,12 +88,8 @@ class ModelTrainer:
 
             predicted=best_model.predict(X_test)
 
-            r2_square = r2_score(y_test, predicted)
-            return r2_square
-            
+            score = f1_score(y_test, predicted)
+            return score
 
-
-
-            
         except Exception as e:
-            raise CustomException(e,sys)
+            raise CustomException(e,sys.exc_info())
