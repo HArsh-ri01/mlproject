@@ -160,4 +160,4 @@ cython_debug/
 #.idea/
 
 # Ignore model.pkl file
-artifacts/model.pkl
+# artifacts/model.pkl
